@@ -373,6 +373,24 @@
     align-items: center;
   }
 
+  /* ===== SHARE ROW ===== */
+  .share-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .share-input {
+    flex: 1;
+    min-width: 0;
+    padding: 7px 10px !important;
+    font-size: 12px !important;
+    color: var(--text-muted) !important;
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  }
+  .share-input:focus { color: var(--text) !important; border-color: var(--accent) !important; }
+
   /* ===== TEMPLATE EDITOR ===== */
   .question-row {
     display: flex;
@@ -665,29 +683,12 @@
     <div class="auth-wrap">
       <div class="auth-card" id="loginCard">
         <h2>Admin sign in</h2>
-        <p class="auth-sub">Enter your password to manage interviews and review submissions.</p>
+        <p class="auth-sub">Enter the admin password to manage interviews and review submissions.</p>
         <div class="field">
           <label class="label">Password</label>
           <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" />
         </div>
         <button class="btn primary lg" id="loginBtn" style="width: 100%; justify-content: center;">Sign in</button>
-        <p class="help" style="margin-top: 14px; text-align: center;">
-          <a id="forgotLink" style="color:var(--accent); cursor:pointer; text-decoration: none;">Forgot password? Reset</a>
-        </p>
-      </div>
-
-      <div class="auth-card" id="setupCard" style="display:none;">
-        <h2>Set up Calpir</h2>
-        <p class="auth-sub">Create an admin password. You'll use it to manage interviews and review submissions.</p>
-        <div class="field">
-          <label class="label">New password</label>
-          <input type="password" id="newPassword" placeholder="At least 4 characters" autocomplete="new-password" />
-        </div>
-        <div class="field">
-          <label class="label">Confirm password</label>
-          <input type="password" id="newPassword2" placeholder="Re-enter password" autocomplete="new-password" />
-        </div>
-        <button class="btn primary lg" id="setupBtn" style="width: 100%; justify-content: center;">Create account</button>
       </div>
 
       <div class="footer-link">
@@ -787,8 +788,11 @@
    - IndexedDB: video blobs
    ============================================================== */
 
-const LS_AUTH = 'calpir_auth_v1';        // { hash: string, salt: string }
-const LS_SESSION = 'calpir_session_v1';  // { admin: true } in localStorage = persisted login
+// SHA-256 of the hardcoded admin password. Anyone with this password can manage
+// templates and review submissions across any device. To change it: compute a new
+// SHA-256 (e.g. echo -n 'newpass' | shasum -a 256) and replace the value below.
+const ADMIN_HASH = 'fac86a2bd316fa02bc4222a01a0f002731a4649ce68bf0f20ceb1c10a0b3998f';
+const LS_SESSION = 'calpir_session_v1';
 const LS_TEMPLATES = 'calpir_templates_v1';
 const LS_SUBMISSIONS = 'calpir_submissions_v1';
 
@@ -862,12 +866,27 @@ async function dbDelete(key) {
 function loadTemplates() {
   try {
     const raw = localStorage.getItem(LS_TEMPLATES);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const list = JSON.parse(raw);
+      // Backfill slugs for any older templates missing them
+      const used = list.filter(t => t.slug).map(t => t.slug);
+      let dirty = false;
+      for (const t of list) {
+        if (!t.slug) {
+          t.slug = uniqueSlug(t.name, used);
+          used.push(t.slug);
+          dirty = true;
+        }
+      }
+      if (dirty) localStorage.setItem(LS_TEMPLATES, JSON.stringify(list));
+      return list;
+    }
   } catch (e) {}
   // Seed sample template
   const seed = [{
     id: cid(),
     name: 'Accounting Interview',
+    slug: 'accounting',
     description: 'General accounting role screening',
     questions: [
       'Tell us about your accounting background and recent experience.',
@@ -891,14 +910,27 @@ function saveSubmissions(arr) { localStorage.setItem(LS_SUBMISSIONS, JSON.string
 function cid() { return 'id_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
 
 /* ---------- Auth ---------- */
-function getAuth() {
-  try { const r = localStorage.getItem(LS_AUTH); return r ? JSON.parse(r) : null; } catch (e) { return null; }
-}
-function setAuth(obj) { localStorage.setItem(LS_AUTH, JSON.stringify(obj)); }
 function isLoggedIn() { return localStorage.getItem(LS_SESSION) === '1'; }
 function setLoggedIn(b) {
   if (b) localStorage.setItem(LS_SESSION, '1');
   else localStorage.removeItem(LS_SESSION);
+}
+
+/* ---------- Slugs ---------- */
+function slugify(name) {
+  return String(name || '').toLowerCase()
+    .normalize('NFKD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+function uniqueSlug(name, existingSlugs) {
+  const base = slugify(name) || 'interview';
+  let s = base, i = 2;
+  while (existingSlugs.includes(s)) { s = base + '-' + i++; }
+  return s;
+}
+function buildShareUrl(slug) {
+  return location.origin + location.pathname + '#role/' + encodeURIComponent(slug);
 }
 
 /* ==============================================================
@@ -930,6 +962,7 @@ function go(view) {
     document.getElementById('logoutBtn').addEventListener('click', () => {
       setLoggedIn(false);
       cleanupStream();
+      if (location.hash) history.replaceState(null, '', location.pathname + location.search);
       go('candidate');
       renderCandidateLanding();
       toast('Signed out.');
@@ -959,17 +992,16 @@ function enterAdmin() {
 
 function showAuthScreen() {
   go('admin-auth');
-  const hasAuth = !!getAuth();
-  document.getElementById('loginCard').style.display = hasAuth ? 'block' : 'none';
-  document.getElementById('setupCard').style.display = hasAuth ? 'none' : 'block';
   setTimeout(() => {
-    const focusEl = hasAuth ? document.getElementById('loginPassword') : document.getElementById('newPassword');
-    if (focusEl) focusEl.focus();
+    const el = document.getElementById('loginPassword');
+    if (el) el.focus();
   }, 50);
 }
 
 document.getElementById('logoBtn').addEventListener('click', () => {
   cleanupStream();
+  currentInterview = null;
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   if (isLoggedIn()) {
     go('admin-templates');
     renderTemplates();
@@ -981,6 +1013,7 @@ document.getElementById('logoBtn').addEventListener('click', () => {
 document.getElementById('adminEntryBtn').addEventListener('click', enterAdmin);
 document.getElementById('adminFooterLink').addEventListener('click', enterAdmin);
 document.getElementById('backToCandidateLink').addEventListener('click', () => {
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   go('candidate');
   renderCandidateLanding();
 });
@@ -997,26 +1030,11 @@ adminNav.querySelectorAll('button').forEach(b => {
 /* ==============================================================
    AUTH HANDLERS
    ============================================================== */
-document.getElementById('setupBtn').addEventListener('click', async () => {
-  const p1 = document.getElementById('newPassword').value;
-  const p2 = document.getElementById('newPassword2').value;
-  if (p1.length < 4) return toast('Password must be at least 4 characters.');
-  if (p1 !== p2) return toast('Passwords do not match.');
-  const salt = randomSalt();
-  const hash = await sha256(salt + p1);
-  setAuth({ hash, salt });
-  setLoggedIn(true);
-  toast('Account created.');
-  go('admin-templates');
-  renderTemplates();
-});
-
 document.getElementById('loginBtn').addEventListener('click', async () => {
-  const auth = getAuth();
-  if (!auth) return showAuthScreen();
   const pw = document.getElementById('loginPassword').value;
-  const hash = await sha256(auth.salt + pw);
-  if (hash !== auth.hash) {
+  if (!pw) return toast('Enter the admin password.');
+  const hash = await sha256(pw);
+  if (hash !== ADMIN_HASH) {
     toast('Incorrect password.');
     return;
   }
@@ -1028,23 +1046,6 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
 
 document.getElementById('loginPassword').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('loginBtn').click();
-});
-document.getElementById('newPassword2').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('setupBtn').click();
-});
-
-document.getElementById('forgotLink').addEventListener('click', () => {
-  confirmDialog({
-    title: 'Reset password?',
-    message: 'This will erase the saved admin password so you can set a new one. Templates and submissions are kept. Continue?',
-    okText: 'Reset',
-    onOk: () => {
-      localStorage.removeItem(LS_AUTH);
-      setLoggedIn(false);
-      showAuthScreen();
-      toast('Password reset. Set a new one.');
-    }
-  });
 });
 
 /* ==============================================================
@@ -1080,7 +1081,10 @@ function renderCandidateLanding() {
         <div class="ic-meta">${t.questions.length} question${t.questions.length === 1 ? '' : 's'}${t.description ? ' · ' + escapeHtml(t.description) : ''}</div>
       </div>
     `;
-    card.addEventListener('click', () => startCandidateIntake(t.id));
+    card.addEventListener('click', () => {
+      // Update URL so candidates can refresh / share their current interview
+      location.hash = 'role/' + encodeURIComponent(t.slug || '');
+    });
     grid.appendChild(card);
   });
   candidateInterviewList.appendChild(grid);
@@ -1106,7 +1110,8 @@ const recIndicator = document.getElementById('recIndicator');
 const timerEl = document.getElementById('timer');
 const recHelp = document.getElementById('recHelp');
 
-function startCandidateIntake(templateId) {
+function startCandidateIntake(templateId, opts) {
+  opts = opts || {};
   const t = loadTemplates().find(x => x.id === templateId);
   if (!t) return toast('Interview not found.');
   currentInterview = { template: t };
@@ -1125,6 +1130,9 @@ function startCandidateIntake(templateId) {
 document.getElementById('backFromTakeBtn').addEventListener('click', () => {
   cleanupStream();
   currentInterview = null;
+  if (location.hash) {
+    history.replaceState(null, '', location.pathname + location.search);
+  }
   go('candidate');
   renderCandidateLanding();
 });
@@ -1294,6 +1302,9 @@ async function saveAndAdvance() {
 
 document.getElementById('takeAnotherBtn').addEventListener('click', () => {
   currentInterview = null;
+  if (location.hash) {
+    history.replaceState(null, '', location.pathname + location.search);
+  }
   go('candidate');
   renderCandidateLanding();
 });
@@ -1341,16 +1352,25 @@ function renderTemplates() {
   list.forEach(t => {
     const card = document.createElement('div');
     card.className = 'card hover';
+    const shareUrl = buildShareUrl(t.slug);
     card.innerHTML = `
-      <div class="row between">
-        <div class="grow">
+      <div class="row between" style="align-items: flex-start;">
+        <div class="grow" style="min-width:0;">
           <h3>${escapeHtml(t.name)}</h3>
           <div class="row tight wrap" style="margin-top: 6px;">
             <span class="pill indigo">${t.questions.length} question${t.questions.length === 1 ? '' : 's'}</span>
             ${t.description ? `<span class="pill">${escapeHtml(t.description)}</span>` : ''}
+            <span class="pill gray">/${escapeHtml(t.slug)}</span>
+          </div>
+          <div class="share-row" style="margin-top: 12px;">
+            <input type="text" readonly value="${escapeAttr(shareUrl)}" class="share-input" />
+            <button class="btn secondary sm" data-copy="${escapeAttr(shareUrl)}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              Copy link
+            </button>
           </div>
         </div>
-        <div class="row tight">
+        <div class="row tight" style="margin-left: 10px;">
           <button class="btn secondary sm" data-edit="${t.id}">Edit</button>
           <button class="btn ghost sm" data-del="${t.id}" style="color: var(--danger);">Delete</button>
         </div>
@@ -1360,6 +1380,21 @@ function renderTemplates() {
   });
   tmplListEl.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEditor(b.dataset.edit)));
   tmplListEl.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteTemplate(b.dataset.del)));
+  tmplListEl.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', async () => {
+    const url = b.dataset.copy;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast('Candidate link copied.');
+    } catch (e) {
+      // Fallback: select the input
+      const inp = b.parentElement.querySelector('.share-input');
+      if (inp) { inp.focus(); inp.select(); document.execCommand('copy'); toast('Candidate link copied.'); }
+      else toast('Copy failed.');
+    }
+  }));
+  tmplListEl.querySelectorAll('.share-input').forEach(inp => {
+    inp.addEventListener('focus', () => inp.select());
+  });
 }
 
 function openEditor(id) {
@@ -1429,9 +1464,27 @@ document.getElementById('saveTemplateBtn').addEventListener('click', () => {
   const list = loadTemplates();
   if (editingTemplateId) {
     const t = list.find(x => x.id === editingTemplateId);
-    t.name = name; t.description = tmplDescInput.value.trim(); t.questions = qs;
+    if (!t) return;
+    t.name = name;
+    t.description = tmplDescInput.value.trim();
+    t.questions = qs;
+    // Re-slug if the name changed and current slug doesn't reflect it (only if the
+    // existing slug is the auto-generated one — i.e. derived from the previous name).
+    const others = list.filter(x => x.id !== t.id).map(x => x.slug).filter(Boolean);
+    if (!t.slug || !slugify(name).startsWith(slugify(t.slug.replace(/-\d+$/, '')))) {
+      // keep existing slug to preserve share links
+    }
+    if (!t.slug) t.slug = uniqueSlug(name, others);
   } else {
-    list.push({ id: cid(), name, description: tmplDescInput.value.trim(), questions: qs, createdAt: Date.now() });
+    const others = list.map(x => x.slug).filter(Boolean);
+    list.push({
+      id: cid(),
+      name,
+      slug: uniqueSlug(name, others),
+      description: tmplDescInput.value.trim(),
+      questions: qs,
+      createdAt: Date.now()
+    });
   }
   saveTemplates(list);
   closeEditor();
@@ -1613,10 +1666,47 @@ function toast(msg) {
 }
 
 /* ==============================================================
+   HASH ROUTING
+   - "" or "#"        → candidate landing
+   - "#role/<slug>"   → start intake for that template
+   - "#admin"         → admin (login if not signed in, templates otherwise)
+   ============================================================== */
+function parseHash() {
+  const h = (location.hash || '').replace(/^#/, '');
+  if (!h) return { type: 'home' };
+  if (h === 'admin') return { type: 'admin' };
+  if (h.indexOf('role/') === 0) return { type: 'role', slug: decodeURIComponent(h.slice(5)) };
+  return { type: 'home' };
+}
+
+function applyRoute() {
+  // If user is mid-interview, don't yank them away on hash changes
+  if (mediaStream) return;
+  const r = parseHash();
+  if (r.type === 'admin') {
+    if (isLoggedIn()) { go('admin-templates'); renderTemplates(); }
+    else showAuthScreen();
+    return;
+  }
+  if (r.type === 'role') {
+    const tmpl = loadTemplates().find(t => t.slug === r.slug);
+    if (tmpl) {
+      startCandidateIntake(tmpl.id, { fromHash: true });
+      return;
+    }
+    // Unknown role → fall through to landing with a toast
+    toast('That interview link is no longer valid.');
+  }
+  go('candidate');
+  renderCandidateLanding();
+}
+
+window.addEventListener('hashchange', applyRoute);
+
+/* ==============================================================
    INITIAL RENDER
    ============================================================== */
-renderCandidateLanding();
-go('candidate');
+applyRoute();
 </script>
 </body>
 </html>
