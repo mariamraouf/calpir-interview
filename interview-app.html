@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calpir — Async Video Interviews</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f8fafc;
+    --surface-2: #f1f5f9;
+    --border: #e5e7eb;
+    --border-strong: #d1d5db;
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --text-soft: #94a3b8;
+    --accent: #4f46e5;
+    --accent-hover: #4338ca;
+    --accent-soft: #eef2ff;
+    --danger: #dc2626;
+    --danger-soft: #fef2f2;
+    --success: #059669;
+    --success-soft: #ecfdf5;
+    --warn: #d97706;
+    --shadow-sm: 0 1px 2px rgba(15,23,42,0.04);
+    --shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+    --shadow-lg: 0 10px 25px rgba(15,23,42,0.08), 0 4px 10px rgba(15,23,42,0.04);
+    --radius-sm: 6px;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    position: sticky;
+    top: 0;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: saturate(180%) blur(10px);
+    -webkit-backdrop-filter: saturate(180%) blur(10px);
+    border-bottom: 1px solid var(--border);
+    z-index: 50;
+  }
+  .header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .logo-mark {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    box-shadow: 0 2px 6px rgba(79,70,229,0.3);
+  }
+  .header-nav { display: flex; align-items: center; gap: 4px; }
+  .header-nav button {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 7px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    transition: 0.15s;
+  }
+  .header-nav button:hover { color: var(--text); background: var(--surface); }
+  .header-nav button.active { color: var(--accent); background: var(--accent-soft); }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 36px 28px 80px; }
+
+  .view { display: none; animation: fadeIn 0.2s ease; }
+  .view.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  h1, h2, h3, h4 { letter-spacing: -0.015em; }
+  h2 { margin: 0 0 4px; font-size: 26px; font-weight: 700; }
+  h3 { margin: 0 0 4px; font-size: 16px; font-weight: 600; }
+  .subtitle { color: var(--text-muted); margin: 0 0 28px; font-size: 15px; }
+  .eyebrow { font-size: 12px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    background: var(--text);
+    color: white;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    transition: 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    line-height: 1;
+  }
+  .btn:hover { background: #1e293b; transform: translateY(-1px); box-shadow: var(--shadow); }
+  .btn:active { transform: none; }
+  .btn.primary { background: var(--accent); }
+  .btn.primary:hover { background: var(--accent-hover); }
+  .btn.secondary {
+    background: white;
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+  }
+  .btn.secondary:hover { background: var(--surface); border-color: var(--text-muted); }
+  .btn.ghost {
+    background: transparent;
+    color: var(--text-muted);
+    padding: 7px 12px;
+  }
+  .btn.ghost:hover { color: var(--text); background: var(--surface); transform: none; box-shadow: none; }
+  .btn.danger { background: var(--danger); }
+  .btn.danger:hover { background: #b91c1c; }
+  .btn.success { background: var(--success); }
+  .btn.success:hover { background: #047857; }
+  .btn.lg { padding: 12px 22px; font-size: 15px; border-radius: 10px; }
+  .btn.sm { padding: 6px 11px; font-size: 13px; border-radius: 7px; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  /* ===== INPUTS ===== */
+  .field { margin-bottom: 16px; }
+  label.label { display: block; font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+  input[type="text"], input[type="password"], textarea, select {
+    width: 100%;
+    background: white;
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: 0.12s;
+  }
+  input[type="text"]:focus, input[type="password"]:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+  }
+  textarea { min-height: 76px; resize: vertical; line-height: 1.45; }
+  .help { color: var(--text-muted); font-size: 13px; margin-top: 6px; }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    transition: 0.15s;
+  }
+  .card.hover:hover { border-color: var(--border-strong); box-shadow: var(--shadow); transform: translateY(-1px); }
+  .card + .card { margin-top: 12px; }
+
+  /* layout helpers */
+  .row { display: flex; gap: 12px; align-items: center; }
+  .row.between { justify-content: space-between; }
+  .row.wrap { flex-wrap: wrap; }
+  .row.tight { gap: 6px; }
+  .row.col-2 > * { flex: 1; min-width: 0; }
+  .grow { flex: 1; min-width: 0; }
+  .stack-sm > * + * { margin-top: 8px; }
+
+  /* ===== PILLS ===== */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    background: var(--surface);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    line-height: 1.4;
+  }
+  .pill.indigo { background: var(--accent-soft); color: var(--accent); border-color: rgba(79,70,229,0.2); }
+  .pill.green { background: var(--success-soft); color: var(--success); border-color: rgba(5,150,105,0.2); }
+  .pill.gray { background: var(--surface-2); color: var(--text-muted); }
+
+  /* ===== EMPTY ===== */
+  .empty {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--text-muted);
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+  .empty-icon {
+    width: 48px; height: 48px;
+    margin: 0 auto 14px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+  }
+  .empty h4 { margin: 0 0 4px; color: var(--text); font-weight: 600; font-size: 15px; }
+  .empty p { margin: 0; font-size: 14px; }
+
+  /* ===== HERO (candidate landing) ===== */
+  .hero {
+    text-align: center;
+    padding: 40px 20px 28px;
+  }
+  .hero h1 {
+    font-size: 38px;
+    font-weight: 700;
+    margin: 0 0 12px;
+    letter-spacing: -0.025em;
+    background: linear-gradient(135deg, #0f172a 0%, #4f46e5 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero p { font-size: 17px; color: var(--text-muted); margin: 0 auto; max-width: 540px; }
+
+  .interview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+    margin-top: 24px;
+  }
+  .interview-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    cursor: pointer;
+    transition: 0.18s;
+    text-align: left;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .interview-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 8px 20px rgba(79,70,229,0.08);
+    transform: translateY(-2px);
+  }
+  .interview-card .ic-icon {
+    width: 40px; height: 40px;
+    background: var(--accent-soft);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+  }
+  .interview-card h3 { font-size: 17px; }
+  .interview-card .ic-meta { color: var(--text-muted); font-size: 13px; }
+
+  /* ===== RECORDER ===== */
+  .progress-strip {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 22px;
+  }
+  .progress-strip .step {
+    flex: 1;
+    height: 4px;
+    background: var(--surface-2);
+    border-radius: 2px;
+    transition: 0.2s;
+  }
+  .progress-strip .step.done { background: var(--success); }
+  .progress-strip .step.current { background: var(--accent); }
+
+  .question-display {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .question-display .q-eyebrow {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .question-display .q-text {
+    font-size: 20px;
+    line-height: 1.45;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .recorder-wrap {
+    background: #0f172a;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    aspect-ratio: 16/9;
+    position: relative;
+    box-shadow: var(--shadow);
+  }
+  .recorder-wrap video { width: 100%; height: 100%; object-fit: cover; background: #0f172a; display: block; }
+  .rec-indicator {
+    position: absolute;
+    top: 14px; left: 14px;
+    background: rgba(220, 38, 38, 0.95);
+    color: white;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    display: none;
+    align-items: center;
+    gap: 7px;
+    backdrop-filter: blur(4px);
+  }
+  .rec-indicator.on { display: flex; }
+  .rec-dot {
+    width: 8px; height: 8px;
+    background: white;
+    border-radius: 50%;
+    animation: blink 1s infinite;
+  }
+  @keyframes blink { 50% { opacity: 0.35; } }
+
+  .recorder-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+    align-items: center;
+  }
+
+  /* ===== TEMPLATE EDITOR ===== */
+  .question-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+  .question-row .qnum {
+    width: 30px; height: 30px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .question-row textarea { flex: 1; min-height: 38px; }
+  .icon-btn {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    margin-top: 1px;
+    background: white;
+    border: 1px solid var(--border-strong);
+    border-radius: 7px;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.12s;
+  }
+  .icon-btn:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-soft); }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.5);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    animation: fadeIn 0.15s;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: white;
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 820px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 26px;
+    box-shadow: var(--shadow-lg);
+  }
+  .modal.sm { max-width: 420px; }
+  .modal h3 { font-size: 19px; }
+
+  .answer-block {
+    border-top: 1px solid var(--border);
+    padding-top: 18px;
+    margin-top: 18px;
+  }
+  .answer-block:first-child { border-top: none; padding-top: 0; margin-top: 14px; }
+  .answer-block .ab-q { font-size: 14px; color: var(--text); margin-bottom: 10px; line-height: 1.5; }
+  .answer-block .ab-q strong { color: var(--accent); margin-right: 4px; }
+  .answer-block video {
+    width: 100%;
+    max-height: 380px;
+    background: #0f172a;
+    border-radius: var(--radius);
+    display: block;
+  }
+  .answer-block .ab-actions { margin-top: 8px; }
+  .answer-block .ab-actions a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .answer-block .ab-actions a:hover { text-decoration: underline; }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: var(--text);
+    color: white;
+    padding: 10px 18px;
+    border-radius: 10px;
+    z-index: 200;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.2s;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ===== AUTH SCREEN ===== */
+  .auth-wrap {
+    max-width: 400px;
+    margin: 60px auto 0;
+    padding: 0 20px;
+  }
+  .auth-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    box-shadow: var(--shadow);
+  }
+  .auth-card h2 { font-size: 22px; margin-bottom: 6px; }
+  .auth-card .auth-sub { color: var(--text-muted); margin-bottom: 22px; font-size: 14px; }
+
+  /* ===== FOOTER LINK ===== */
+  .footer-link {
+    text-align: center;
+    margin-top: 60px;
+    font-size: 12px;
+    color: var(--text-soft);
+  }
+  .footer-link a { color: var(--text-muted); text-decoration: none; cursor: pointer; }
+  .footer-link a:hover { color: var(--accent); }
+
+  hr.sep { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+
+  .timer {
+    font-variant-numeric: tabular-nums;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .info-box {
+    background: var(--accent-soft);
+    border: 1px solid rgba(79,70,229,0.2);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    color: var(--text);
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+  .info-box strong { color: var(--accent); }
+
+  @media (max-width: 640px) {
+    .header-inner { padding: 12px 16px; }
+    main { padding: 22px 16px 60px; }
+    .hero h1 { font-size: 28px; }
+    .hero p { font-size: 15px; }
+    .question-display .q-text { font-size: 17px; }
+    h2 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a class="logo" id="logoBtn">
+      <span class="logo-mark">C</span>
+      <span>Calpir</span>
+    </a>
+    <nav class="header-nav" id="adminNav" style="display:none;">
+      <button data-view="admin-templates" class="active">Templates</button>
+      <button data-view="admin-review">Submissions</button>
+    </nav>
+    <div class="header-right" id="headerRight">
+      <button class="btn ghost sm" id="adminEntryBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Admin
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============== CANDIDATE LANDING ============== -->
+  <section id="view-candidate" class="view active">
+    <div class="hero">
+      <h1>Welcome to your interview</h1>
+      <p>Choose your interview below and answer each question on video at your own pace. You'll be able to re-record your answers before submitting.</p>
+    </div>
+    <div id="candidateInterviewList"></div>
+    <div class="footer-link">
+      <a id="adminFooterLink">Admin sign in</a>
+    </div>
+  </section>
+
+  <!-- ============== CANDIDATE: TAKING INTERVIEW ============== -->
+  <section id="view-take" class="view">
+    <div id="takeIntro">
+      <div class="row" style="margin-bottom: 18px;">
+        <button class="btn ghost sm" id="backFromTakeBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Back
+        </button>
+      </div>
+      <div class="card" style="max-width: 540px; margin: 0 auto;">
+        <div class="eyebrow" id="takeIntroEyebrow"></div>
+        <h2 id="takeIntroTitle"></h2>
+        <p class="subtitle" id="takeIntroDesc"></p>
+
+        <div class="info-box">
+          <strong>Before you start:</strong> we'll request access to your camera and microphone. Make sure you're in a quiet, well-lit space.
+        </div>
+
+        <div class="field">
+          <label class="label">Your full name</label>
+          <input type="text" id="candidateName" placeholder="e.g., Jane Doe" />
+        </div>
+
+        <div class="row">
+          <button class="btn primary lg grow" id="startInterviewBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Start Interview
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="takeFlow" style="display:none;">
+      <div class="row between" style="margin-bottom: 14px;">
+        <div class="pill indigo" id="takeFlowTitle"></div>
+        <div class="pill gray" id="takeFlowName"></div>
+      </div>
+      <div class="progress-strip" id="progressStrip"></div>
+      <div class="question-display">
+        <div class="q-eyebrow">Question <span id="qNum"></span> of <span id="qTotal"></span></div>
+        <div class="q-text" id="qText"></div>
+      </div>
+
+      <div class="recorder-wrap">
+        <video id="liveVideo" autoplay muted playsinline></video>
+        <div class="rec-indicator" id="recIndicator">
+          <span class="rec-dot"></span>
+          <span>REC</span>
+          <span class="timer" id="timer">0:00</span>
+        </div>
+      </div>
+
+      <video id="playbackVideo" controls style="display:none; width:100%; max-height: 480px; background:#0f172a; border-radius: var(--radius-lg); margin-top: 12px;"></video>
+
+      <div class="recorder-actions">
+        <button class="btn primary" id="recordBtn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+          Start Recording
+        </button>
+        <button class="btn danger" id="stopBtn" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+          Stop Recording
+        </button>
+        <button class="btn secondary" id="rerecordBtn" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          Re-record
+        </button>
+        <button class="btn success" id="nextBtn" style="display:none;">
+          Save &amp; Next
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      <p class="help" id="recHelp">Click <strong>Start Recording</strong> when you're ready to answer.</p>
+    </div>
+
+    <div id="takeDone" style="display:none;">
+      <div class="card" style="max-width: 520px; margin: 60px auto; text-align:center; padding: 44px 28px;">
+        <div style="width: 60px; height: 60px; background: var(--success-soft); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 18px; color: var(--success);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 28px; height: 28px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <h2 style="margin-bottom: 8px;">Interview submitted</h2>
+        <p class="subtitle">Thank you. Your answers have been saved and the team will review them.</p>
+        <button class="btn primary" id="takeAnotherBtn">Done</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== ADMIN: AUTH ============== -->
+  <section id="view-admin-auth" class="view">
+    <div class="auth-wrap">
+      <div class="auth-card" id="loginCard">
+        <h2>Admin sign in</h2>
+        <p class="auth-sub">Enter your password to manage interviews and review submissions.</p>
+        <div class="field">
+          <label class="label">Password</label>
+          <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <button class="btn primary lg" id="loginBtn" style="width: 100%; justify-content: center;">Sign in</button>
+        <p class="help" style="margin-top: 14px; text-align: center;">
+          <a id="forgotLink" style="color:var(--accent); cursor:pointer; text-decoration: none;">Forgot password? Reset</a>
+        </p>
+      </div>
+
+      <div class="auth-card" id="setupCard" style="display:none;">
+        <h2>Set up Calpir</h2>
+        <p class="auth-sub">Create an admin password. You'll use it to manage interviews and review submissions.</p>
+        <div class="field">
+          <label class="label">New password</label>
+          <input type="password" id="newPassword" placeholder="At least 4 characters" autocomplete="new-password" />
+        </div>
+        <div class="field">
+          <label class="label">Confirm password</label>
+          <input type="password" id="newPassword2" placeholder="Re-enter password" autocomplete="new-password" />
+        </div>
+        <button class="btn primary lg" id="setupBtn" style="width: 100%; justify-content: center;">Create account</button>
+      </div>
+
+      <div class="footer-link">
+        <a id="backToCandidateLink">← Back to interviews</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== ADMIN: TEMPLATES ============== -->
+  <section id="view-admin-templates" class="view">
+    <div class="row between" style="margin-bottom: 24px;">
+      <div>
+        <h2>Interview templates</h2>
+        <p class="subtitle" style="margin-bottom: 0;">Create the questions candidates will answer on video.</p>
+      </div>
+      <button class="btn primary" id="newTemplateBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        New template
+      </button>
+    </div>
+    <div id="templateList"></div>
+
+    <div id="templateEditor" class="card" style="display:none; margin-top: 16px;">
+      <h3 id="editorTitle">New template</h3>
+      <div class="row col-2" style="margin-top: 14px;">
+        <div class="field">
+          <label class="label">Template name</label>
+          <input type="text" id="tmplName" placeholder="e.g., Senior Accountant" />
+        </div>
+        <div class="field">
+          <label class="label">Description (optional)</label>
+          <input type="text" id="tmplDesc" placeholder="Short description" />
+        </div>
+      </div>
+
+      <label class="label">Questions</label>
+      <div id="questionsList"></div>
+      <button class="btn secondary sm" id="addQuestionBtn" style="margin-top: 6px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add question
+      </button>
+
+      <hr class="sep" />
+      <div class="row between">
+        <button class="btn secondary" id="cancelEditBtn">Cancel</button>
+        <button class="btn primary" id="saveTemplateBtn">Save template</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== ADMIN: REVIEW ============== -->
+  <section id="view-admin-review" class="view">
+    <div style="margin-bottom: 24px;">
+      <h2>Submissions</h2>
+      <p class="subtitle" style="margin-bottom: 0;">Watch each candidate's answers below.</p>
+    </div>
+    <div id="submissionsList"></div>
+  </section>
+</main>
+
+<!-- Review modal -->
+<div class="modal-overlay" id="reviewModal">
+  <div class="modal">
+    <div class="row between" style="margin-bottom: 4px; align-items: flex-start;">
+      <div>
+        <h3 id="reviewName"></h3>
+        <div id="reviewMeta" style="color:var(--text-muted); font-size:13px; margin-top: 2px;"></div>
+      </div>
+      <button class="btn ghost sm" id="closeReviewBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        Close
+      </button>
+    </div>
+    <div id="reviewAnswers"></div>
+  </div>
+</div>
+
+<!-- Confirm modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal sm">
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <p class="subtitle" id="confirmMsg" style="margin-bottom: 18px;"></p>
+    <div class="row between">
+      <button class="btn secondary" id="confirmCancel">Cancel</button>
+      <button class="btn danger" id="confirmOk">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==============================================================
+   Calpir — Async Video Interviews
+   Single-file app. All data stored locally on this machine:
+   - localStorage: admin credential hash, templates, submissions metadata
+   - IndexedDB: video blobs
+   ============================================================== */
+
+const LS_AUTH = 'calpir_auth_v1';        // { hash: string, salt: string }
+const LS_SESSION = 'calpir_session_v1';  // { admin: true } in localStorage = persisted login
+const LS_TEMPLATES = 'calpir_templates_v1';
+const LS_SUBMISSIONS = 'calpir_submissions_v1';
+
+/* ---------- Tiny SHA-256 (subtle crypto with JS fallback) ---------- */
+async function sha256(text) {
+  if (window.crypto && crypto.subtle && crypto.subtle.digest) {
+    try {
+      const buf = new TextEncoder().encode(text);
+      const hash = await crypto.subtle.digest('SHA-256', buf);
+      return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (e) { /* fall through */ }
+  }
+  // Fallback: simple non-crypto hash (keeps things working in unusual envs)
+  let h = 5381;
+  for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) & 0xffffffff;
+  return 'fb_' + (h >>> 0).toString(16);
+}
+function randomSalt() {
+  const a = new Uint8Array(16);
+  if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(a);
+  else for (let i = 0; i < a.length; i++) a[i] = Math.floor(Math.random() * 256);
+  return Array.from(a).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/* ---------- IndexedDB for video blobs ---------- */
+const DB_NAME = 'calpir_videos';
+const STORE = 'videos';
+let dbPromise = null;
+function openDB() {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return dbPromise;
+}
+async function dbPut(key, blob) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).put(blob, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function dbGet(key) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function dbDelete(key) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/* ---------- Data helpers ---------- */
+function loadTemplates() {
+  try {
+    const raw = localStorage.getItem(LS_TEMPLATES);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  // Seed sample template
+  const seed = [{
+    id: cid(),
+    name: 'Accounting Interview',
+    description: 'General accounting role screening',
+    questions: [
+      'Tell us about your accounting background and recent experience.',
+      'Walk us through how you would reconcile a bank statement at the end of the month.',
+      'What is the difference between accrual and cash basis accounting? When would you use each?',
+      'Describe a time you caught a financial error. How did you find it and how did you handle it?',
+      'What accounting software are you most comfortable with, and what kinds of reports have you built?'
+    ],
+    createdAt: Date.now()
+  }];
+  localStorage.setItem(LS_TEMPLATES, JSON.stringify(seed));
+  return seed;
+}
+function saveTemplates(arr) { localStorage.setItem(LS_TEMPLATES, JSON.stringify(arr)); }
+function loadSubmissions() {
+  try { const raw = localStorage.getItem(LS_SUBMISSIONS); if (raw) return JSON.parse(raw); }
+  catch (e) {}
+  return [];
+}
+function saveSubmissions(arr) { localStorage.setItem(LS_SUBMISSIONS, JSON.stringify(arr)); }
+function cid() { return 'id_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
+
+/* ---------- Auth ---------- */
+function getAuth() {
+  try { const r = localStorage.getItem(LS_AUTH); return r ? JSON.parse(r) : null; } catch (e) { return null; }
+}
+function setAuth(obj) { localStorage.setItem(LS_AUTH, JSON.stringify(obj)); }
+function isLoggedIn() { return localStorage.getItem(LS_SESSION) === '1'; }
+function setLoggedIn(b) {
+  if (b) localStorage.setItem(LS_SESSION, '1');
+  else localStorage.removeItem(LS_SESSION);
+}
+
+/* ==============================================================
+   ROUTING
+   ============================================================== */
+const VIEWS = ['candidate', 'take', 'admin-auth', 'admin-templates', 'admin-review'];
+const adminNav = document.getElementById('adminNav');
+const adminEntryBtn = document.getElementById('adminEntryBtn');
+const headerRight = document.getElementById('headerRight');
+
+function go(view) {
+  VIEWS.forEach(v => {
+    const el = document.getElementById('view-' + v);
+    if (el) el.classList.toggle('active', v === view);
+  });
+  // header state
+  const isAdminArea = view === 'admin-templates' || view === 'admin-review';
+  adminNav.style.display = isAdminArea ? 'flex' : 'none';
+  if (isAdminArea) {
+    adminNav.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  }
+  // header right: show different controls based on context
+  if (isAdminArea) {
+    headerRight.innerHTML = `
+      <button class="btn ghost sm" id="logoutBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign out
+      </button>`;
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      setLoggedIn(false);
+      cleanupStream();
+      go('candidate');
+      renderCandidateLanding();
+      toast('Signed out.');
+    });
+  } else if (view === 'admin-auth') {
+    headerRight.innerHTML = '';
+  } else {
+    headerRight.innerHTML = `
+      <button class="btn ghost sm" id="adminEntryBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Admin
+      </button>`;
+    document.getElementById('adminEntryBtn').addEventListener('click', enterAdmin);
+  }
+
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function enterAdmin() {
+  if (isLoggedIn()) {
+    go('admin-templates');
+    renderTemplates();
+  } else {
+    showAuthScreen();
+  }
+}
+
+function showAuthScreen() {
+  go('admin-auth');
+  const hasAuth = !!getAuth();
+  document.getElementById('loginCard').style.display = hasAuth ? 'block' : 'none';
+  document.getElementById('setupCard').style.display = hasAuth ? 'none' : 'block';
+  setTimeout(() => {
+    const focusEl = hasAuth ? document.getElementById('loginPassword') : document.getElementById('newPassword');
+    if (focusEl) focusEl.focus();
+  }, 50);
+}
+
+document.getElementById('logoBtn').addEventListener('click', () => {
+  cleanupStream();
+  if (isLoggedIn()) {
+    go('admin-templates');
+    renderTemplates();
+  } else {
+    go('candidate');
+    renderCandidateLanding();
+  }
+});
+document.getElementById('adminEntryBtn').addEventListener('click', enterAdmin);
+document.getElementById('adminFooterLink').addEventListener('click', enterAdmin);
+document.getElementById('backToCandidateLink').addEventListener('click', () => {
+  go('candidate');
+  renderCandidateLanding();
+});
+
+adminNav.querySelectorAll('button').forEach(b => {
+  b.addEventListener('click', () => {
+    if (!isLoggedIn()) return showAuthScreen();
+    go(b.dataset.view);
+    if (b.dataset.view === 'admin-templates') renderTemplates();
+    if (b.dataset.view === 'admin-review') renderSubmissions();
+  });
+});
+
+/* ==============================================================
+   AUTH HANDLERS
+   ============================================================== */
+document.getElementById('setupBtn').addEventListener('click', async () => {
+  const p1 = document.getElementById('newPassword').value;
+  const p2 = document.getElementById('newPassword2').value;
+  if (p1.length < 4) return toast('Password must be at least 4 characters.');
+  if (p1 !== p2) return toast('Passwords do not match.');
+  const salt = randomSalt();
+  const hash = await sha256(salt + p1);
+  setAuth({ hash, salt });
+  setLoggedIn(true);
+  toast('Account created.');
+  go('admin-templates');
+  renderTemplates();
+});
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const auth = getAuth();
+  if (!auth) return showAuthScreen();
+  const pw = document.getElementById('loginPassword').value;
+  const hash = await sha256(auth.salt + pw);
+  if (hash !== auth.hash) {
+    toast('Incorrect password.');
+    return;
+  }
+  setLoggedIn(true);
+  document.getElementById('loginPassword').value = '';
+  go('admin-templates');
+  renderTemplates();
+});
+
+document.getElementById('loginPassword').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('loginBtn').click();
+});
+document.getElementById('newPassword2').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('setupBtn').click();
+});
+
+document.getElementById('forgotLink').addEventListener('click', () => {
+  confirmDialog({
+    title: 'Reset password?',
+    message: 'This will erase the saved admin password so you can set a new one. Templates and submissions are kept. Continue?',
+    okText: 'Reset',
+    onOk: () => {
+      localStorage.removeItem(LS_AUTH);
+      setLoggedIn(false);
+      showAuthScreen();
+      toast('Password reset. Set a new one.');
+    }
+  });
+});
+
+/* ==============================================================
+   CANDIDATE LANDING
+   ============================================================== */
+const candidateInterviewList = document.getElementById('candidateInterviewList');
+
+function renderCandidateLanding() {
+  const tmpls = loadTemplates();
+  candidateInterviewList.innerHTML = '';
+  if (tmpls.length === 0) {
+    candidateInterviewList.innerHTML = `
+      <div class="empty" style="max-width: 520px; margin: 24px auto 0;">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        </div>
+        <h4>No interviews available</h4>
+        <p>Please contact the team that sent you here.</p>
+      </div>`;
+    return;
+  }
+  const grid = document.createElement('div');
+  grid.className = 'interview-grid';
+  tmpls.forEach(t => {
+    const card = document.createElement('button');
+    card.className = 'interview-card';
+    card.innerHTML = `
+      <div class="ic-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+      </div>
+      <div>
+        <h3>${escapeHtml(t.name)}</h3>
+        <div class="ic-meta">${t.questions.length} question${t.questions.length === 1 ? '' : 's'}${t.description ? ' · ' + escapeHtml(t.description) : ''}</div>
+      </div>
+    `;
+    card.addEventListener('click', () => startCandidateIntake(t.id));
+    grid.appendChild(card);
+  });
+  candidateInterviewList.appendChild(grid);
+}
+
+/* ==============================================================
+   CANDIDATE: TAKE FLOW
+   ============================================================== */
+let currentInterview = null;
+let mediaStream = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let timerInterval = null;
+let recordStartTs = 0;
+
+const liveVideo = document.getElementById('liveVideo');
+const playbackVideo = document.getElementById('playbackVideo');
+const recordBtn = document.getElementById('recordBtn');
+const stopBtn = document.getElementById('stopBtn');
+const rerecordBtn = document.getElementById('rerecordBtn');
+const nextBtn = document.getElementById('nextBtn');
+const recIndicator = document.getElementById('recIndicator');
+const timerEl = document.getElementById('timer');
+const recHelp = document.getElementById('recHelp');
+
+function startCandidateIntake(templateId) {
+  const t = loadTemplates().find(x => x.id === templateId);
+  if (!t) return toast('Interview not found.');
+  currentInterview = { template: t };
+  go('take');
+  document.getElementById('takeIntro').style.display = 'block';
+  document.getElementById('takeFlow').style.display = 'none';
+  document.getElementById('takeDone').style.display = 'none';
+  document.getElementById('takeIntroEyebrow').textContent = 'Interview';
+  document.getElementById('takeIntroTitle').textContent = t.name;
+  document.getElementById('takeIntroDesc').textContent = t.description
+    || `${t.questions.length} question${t.questions.length === 1 ? '' : 's'}. Take your time and answer each on video.`;
+  document.getElementById('candidateName').value = '';
+  setTimeout(() => document.getElementById('candidateName').focus(), 80);
+}
+
+document.getElementById('backFromTakeBtn').addEventListener('click', () => {
+  cleanupStream();
+  currentInterview = null;
+  go('candidate');
+  renderCandidateLanding();
+});
+
+document.getElementById('startInterviewBtn').addEventListener('click', async () => {
+  const name = document.getElementById('candidateName').value.trim();
+  if (!name) return toast('Please enter your name.');
+  if (!currentInterview) return;
+
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: true
+    });
+  } catch (err) {
+    return toast('Camera and microphone access is required.');
+  }
+  liveVideo.srcObject = mediaStream;
+
+  currentInterview.name = name;
+  currentInterview.submissionId = cid();
+  currentInterview.idx = 0;
+  currentInterview.blobKeys = {};
+
+  document.getElementById('takeIntro').style.display = 'none';
+  document.getElementById('takeFlow').style.display = 'block';
+  document.getElementById('takeFlowTitle').textContent = currentInterview.template.name;
+  document.getElementById('takeFlowName').textContent = name;
+  renderQuestion();
+});
+
+function renderQuestion() {
+  const { template, idx } = currentInterview;
+  document.getElementById('qNum').textContent = idx + 1;
+  document.getElementById('qTotal').textContent = template.questions.length;
+  document.getElementById('qText').textContent = template.questions[idx];
+
+  const strip = document.getElementById('progressStrip');
+  strip.innerHTML = '';
+  template.questions.forEach((_, i) => {
+    const s = document.createElement('div');
+    s.className = 'step' + (i < idx ? ' done' : i === idx ? ' current' : '');
+    strip.appendChild(s);
+  });
+
+  liveVideo.style.display = 'block';
+  playbackVideo.style.display = 'none';
+  playbackVideo.removeAttribute('src');
+  recordBtn.style.display = 'inline-flex';
+  recordBtn.disabled = false;
+  stopBtn.style.display = 'none';
+  rerecordBtn.style.display = 'none';
+  nextBtn.style.display = 'none';
+  recIndicator.classList.remove('on');
+  recHelp.innerHTML = 'Click <strong>Start Recording</strong> when you\'re ready to answer.';
+}
+
+recordBtn.addEventListener('click', startRecording);
+stopBtn.addEventListener('click', stopRecording);
+rerecordBtn.addEventListener('click', () => {
+  recordedChunks = [];
+  if (currentInterview) { delete currentInterview._pendingBlob; delete currentInterview._pendingMime; }
+  playbackVideo.style.display = 'none';
+  playbackVideo.removeAttribute('src');
+  liveVideo.style.display = 'block';
+  recordBtn.style.display = 'inline-flex';
+  recordBtn.disabled = false;
+  rerecordBtn.style.display = 'none';
+  nextBtn.style.display = 'none';
+  recHelp.innerHTML = 'Click <strong>Start Recording</strong> when you\'re ready.';
+});
+nextBtn.addEventListener('click', saveAndAdvance);
+
+function pickMimeType() {
+  const candidates = [
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm',
+    'video/mp4'
+  ];
+  for (const c of candidates) {
+    if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(c)) return c;
+  }
+  return '';
+}
+function startRecording() {
+  recordedChunks = [];
+  const mime = pickMimeType();
+  try {
+    mediaRecorder = mime ? new MediaRecorder(mediaStream, { mimeType: mime }) : new MediaRecorder(mediaStream);
+  } catch (e) {
+    return toast('Could not start recorder: ' + e.message);
+  }
+  mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
+  mediaRecorder.onstop = onRecordStop;
+  mediaRecorder.start();
+
+  recordStartTs = Date.now();
+  timerEl.textContent = '0:00';
+  recIndicator.classList.add('on');
+  timerInterval = setInterval(() => {
+    const s = Math.floor((Date.now() - recordStartTs) / 1000);
+    timerEl.textContent = `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+  }, 250);
+
+  recordBtn.style.display = 'none';
+  stopBtn.style.display = 'inline-flex';
+  recHelp.innerHTML = 'Recording... click <strong>Stop</strong> when you\'re done answering.';
+}
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+}
+function onRecordStop() {
+  clearInterval(timerInterval);
+  recIndicator.classList.remove('on');
+  const mime = mediaRecorder.mimeType || 'video/webm';
+  const blob = new Blob(recordedChunks, { type: mime });
+  const url = URL.createObjectURL(blob);
+
+  liveVideo.style.display = 'none';
+  playbackVideo.style.display = 'block';
+  playbackVideo.src = url;
+
+  stopBtn.style.display = 'none';
+  rerecordBtn.style.display = 'inline-flex';
+  nextBtn.style.display = 'inline-flex';
+  currentInterview._pendingBlob = blob;
+  currentInterview._pendingMime = mime;
+
+  const last = currentInterview.idx === currentInterview.template.questions.length - 1;
+  nextBtn.innerHTML = last
+    ? `Submit interview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+    : `Save &amp; Next <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
+  recHelp.innerHTML = 'Review your answer. Re-record if you want, or save and continue.';
+}
+
+async function saveAndAdvance() {
+  const { submissionId, idx, _pendingBlob, _pendingMime } = currentInterview;
+  if (!_pendingBlob) return toast('No recording to save.');
+  const key = `${submissionId}_q${idx}`;
+  try { await dbPut(key, _pendingBlob); }
+  catch (err) { return toast('Failed to save video: ' + err.message); }
+  currentInterview.blobKeys[idx] = { key, mime: _pendingMime, size: _pendingBlob.size };
+  delete currentInterview._pendingBlob;
+  delete currentInterview._pendingMime;
+
+  if (idx + 1 < currentInterview.template.questions.length) {
+    currentInterview.idx += 1;
+    renderQuestion();
+  } else {
+    const subs = loadSubmissions();
+    subs.push({
+      id: submissionId,
+      name: currentInterview.name,
+      templateId: currentInterview.template.id,
+      templateName: currentInterview.template.name,
+      questions: currentInterview.template.questions,
+      blobKeys: currentInterview.blobKeys,
+      submittedAt: Date.now()
+    });
+    saveSubmissions(subs);
+    cleanupStream();
+    document.getElementById('takeFlow').style.display = 'none';
+    document.getElementById('takeDone').style.display = 'block';
+  }
+}
+
+document.getElementById('takeAnotherBtn').addEventListener('click', () => {
+  currentInterview = null;
+  go('candidate');
+  renderCandidateLanding();
+});
+
+function cleanupStream() {
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(t => t.stop());
+    mediaStream = null;
+  }
+  if (liveVideo) liveVideo.srcObject = null;
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    try { mediaRecorder.stop(); } catch (e) {}
+  }
+  clearInterval(timerInterval);
+}
+window.addEventListener('beforeunload', cleanupStream);
+
+/* ==============================================================
+   ADMIN: TEMPLATES
+   ============================================================== */
+let editingTemplateId = null;
+let editorQuestions = [];
+
+const tmplListEl = document.getElementById('templateList');
+const tmplEditor = document.getElementById('templateEditor');
+const tmplNameInput = document.getElementById('tmplName');
+const tmplDescInput = document.getElementById('tmplDesc');
+const questionsListEl = document.getElementById('questionsList');
+const editorTitle = document.getElementById('editorTitle');
+
+function renderTemplates() {
+  const list = loadTemplates();
+  tmplListEl.innerHTML = '';
+  if (list.length === 0) {
+    tmplListEl.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <h4>No templates yet</h4>
+        <p>Create your first interview template to get started.</p>
+      </div>`;
+    return;
+  }
+  list.forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'card hover';
+    card.innerHTML = `
+      <div class="row between">
+        <div class="grow">
+          <h3>${escapeHtml(t.name)}</h3>
+          <div class="row tight wrap" style="margin-top: 6px;">
+            <span class="pill indigo">${t.questions.length} question${t.questions.length === 1 ? '' : 's'}</span>
+            ${t.description ? `<span class="pill">${escapeHtml(t.description)}</span>` : ''}
+          </div>
+        </div>
+        <div class="row tight">
+          <button class="btn secondary sm" data-edit="${t.id}">Edit</button>
+          <button class="btn ghost sm" data-del="${t.id}" style="color: var(--danger);">Delete</button>
+        </div>
+      </div>
+    `;
+    tmplListEl.appendChild(card);
+  });
+  tmplListEl.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => openEditor(b.dataset.edit)));
+  tmplListEl.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteTemplate(b.dataset.del)));
+}
+
+function openEditor(id) {
+  const list = loadTemplates();
+  if (id) {
+    const t = list.find(x => x.id === id);
+    if (!t) return;
+    editingTemplateId = id;
+    tmplNameInput.value = t.name;
+    tmplDescInput.value = t.description || '';
+    editorQuestions = [...t.questions];
+    editorTitle.textContent = 'Edit template';
+  } else {
+    editingTemplateId = null;
+    tmplNameInput.value = '';
+    tmplDescInput.value = '';
+    editorQuestions = [''];
+    editorTitle.textContent = 'New template';
+  }
+  renderEditorQuestions();
+  tmplEditor.style.display = 'block';
+  tmplEditor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  setTimeout(() => tmplNameInput.focus(), 80);
+}
+function closeEditor() {
+  tmplEditor.style.display = 'none';
+  editingTemplateId = null;
+  editorQuestions = [];
+}
+function renderEditorQuestions() {
+  questionsListEl.innerHTML = '';
+  editorQuestions.forEach((q, i) => {
+    const row = document.createElement('div');
+    row.className = 'question-row';
+    row.innerHTML = `
+      <div class="qnum">${i + 1}</div>
+      <textarea data-qi="${i}" placeholder="Type your question...">${escapeHtml(q)}</textarea>
+      <button class="icon-btn" data-rm="${i}" title="Remove">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+    `;
+    questionsListEl.appendChild(row);
+  });
+  questionsListEl.querySelectorAll('textarea').forEach(t => {
+    t.addEventListener('input', e => { editorQuestions[+e.target.dataset.qi] = e.target.value; });
+  });
+  questionsListEl.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => {
+    editorQuestions.splice(+b.dataset.rm, 1);
+    if (editorQuestions.length === 0) editorQuestions = [''];
+    renderEditorQuestions();
+  }));
+}
+document.getElementById('addQuestionBtn').addEventListener('click', () => {
+  editorQuestions.push('');
+  renderEditorQuestions();
+  // focus the new textarea
+  const txts = questionsListEl.querySelectorAll('textarea');
+  if (txts.length) txts[txts.length - 1].focus();
+});
+document.getElementById('newTemplateBtn').addEventListener('click', () => openEditor(null));
+document.getElementById('cancelEditBtn').addEventListener('click', closeEditor);
+document.getElementById('saveTemplateBtn').addEventListener('click', () => {
+  const name = tmplNameInput.value.trim();
+  if (!name) return toast('Please give the template a name.');
+  const qs = editorQuestions.map(q => q.trim()).filter(Boolean);
+  if (qs.length === 0) return toast('Add at least one question.');
+  const list = loadTemplates();
+  if (editingTemplateId) {
+    const t = list.find(x => x.id === editingTemplateId);
+    t.name = name; t.description = tmplDescInput.value.trim(); t.questions = qs;
+  } else {
+    list.push({ id: cid(), name, description: tmplDescInput.value.trim(), questions: qs, createdAt: Date.now() });
+  }
+  saveTemplates(list);
+  closeEditor();
+  renderTemplates();
+  toast('Template saved.');
+});
+
+function deleteTemplate(id) {
+  confirmDialog({
+    title: 'Delete template?',
+    message: 'Existing submissions will not be affected. This cannot be undone.',
+    okText: 'Delete',
+    onOk: () => {
+      const list = loadTemplates().filter(t => t.id !== id);
+      saveTemplates(list);
+      renderTemplates();
+      toast('Template deleted.');
+    }
+  });
+}
+
+/* ==============================================================
+   ADMIN: REVIEW
+   ============================================================== */
+const submissionsListEl = document.getElementById('submissionsList');
+function renderSubmissions() {
+  const subs = loadSubmissions().slice().sort((a, b) => b.submittedAt - a.submittedAt);
+  submissionsListEl.innerHTML = '';
+  if (subs.length === 0) {
+    submissionsListEl.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        </div>
+        <h4>No submissions yet</h4>
+        <p>Once candidates complete an interview, their videos will appear here.</p>
+      </div>`;
+    return;
+  }
+  subs.forEach(s => {
+    const date = new Date(s.submittedAt);
+    const card = document.createElement('div');
+    card.className = 'card hover';
+    card.innerHTML = `
+      <div class="row between">
+        <div class="grow">
+          <h3>${escapeHtml(s.name)}</h3>
+          <div class="row tight wrap" style="margin-top: 6px;">
+            <span class="pill indigo">${escapeHtml(s.templateName)}</span>
+            <span class="pill green">${Object.keys(s.blobKeys).length} answer${Object.keys(s.blobKeys).length === 1 ? '' : 's'}</span>
+            <span class="pill">${date.toLocaleString()}</span>
+          </div>
+        </div>
+        <div class="row tight">
+          <button class="btn primary sm" data-view="${s.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Watch
+          </button>
+          <button class="btn ghost sm" data-del="${s.id}" style="color: var(--danger);">Delete</button>
+        </div>
+      </div>
+    `;
+    submissionsListEl.appendChild(card);
+  });
+  submissionsListEl.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => openSubmission(b.dataset.view)));
+  submissionsListEl.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteSubmission(b.dataset.del)));
+}
+
+const reviewModal = document.getElementById('reviewModal');
+const reviewName = document.getElementById('reviewName');
+const reviewMeta = document.getElementById('reviewMeta');
+const reviewAnswers = document.getElementById('reviewAnswers');
+document.getElementById('closeReviewBtn').addEventListener('click', closeReview);
+reviewModal.addEventListener('click', e => { if (e.target === reviewModal) closeReview(); });
+
+let openedObjectUrls = [];
+async function openSubmission(id) {
+  const sub = loadSubmissions().find(s => s.id === id);
+  if (!sub) return;
+  reviewName.textContent = sub.name;
+  reviewMeta.textContent = `${sub.templateName} · ${new Date(sub.submittedAt).toLocaleString()}`;
+  reviewAnswers.innerHTML = '<div style="color:var(--text-muted); padding: 14px 0;">Loading videos…</div>';
+  openedObjectUrls.forEach(u => URL.revokeObjectURL(u));
+  openedObjectUrls = [];
+
+  const blocks = [];
+  for (let i = 0; i < sub.questions.length; i++) {
+    const meta = sub.blobKeys[i];
+    let videoHtml = '<div style="color:var(--text-muted); font-size:13px;">No recording.</div>';
+    if (meta) {
+      const blob = await dbGet(meta.key);
+      if (blob) {
+        const url = URL.createObjectURL(blob);
+        openedObjectUrls.push(url);
+        const ext = (meta.mime || '').includes('mp4') ? 'mp4' : 'webm';
+        videoHtml = `<video controls src="${url}"></video>
+          <div class="ab-actions"><a href="${url}" download="${escapeAttr(sub.name)}_q${i+1}.${ext}">Download video</a></div>`;
+      } else {
+        videoHtml = '<div style="color:var(--text-muted); font-size:13px;">Video file not found.</div>';
+      }
+    }
+    blocks.push(`
+      <div class="answer-block">
+        <div class="ab-q"><strong>Q${i+1}.</strong>${escapeHtml(sub.questions[i])}</div>
+        ${videoHtml}
+      </div>
+    `);
+  }
+  reviewAnswers.innerHTML = blocks.join('');
+  reviewModal.classList.add('show');
+}
+function closeReview() {
+  reviewModal.classList.remove('show');
+  reviewAnswers.innerHTML = '';
+  openedObjectUrls.forEach(u => URL.revokeObjectURL(u));
+  openedObjectUrls = [];
+}
+
+function deleteSubmission(id) {
+  confirmDialog({
+    title: 'Delete submission?',
+    message: 'This will permanently delete the candidate\'s videos.',
+    okText: 'Delete',
+    onOk: async () => {
+      const subs = loadSubmissions();
+      const sub = subs.find(s => s.id === id);
+      if (sub) {
+        for (const k of Object.keys(sub.blobKeys)) {
+          try { await dbDelete(sub.blobKeys[k].key); } catch (e) {}
+        }
+      }
+      saveSubmissions(subs.filter(s => s.id !== id));
+      renderSubmissions();
+      toast('Submission deleted.');
+    }
+  });
+}
+
+/* ==============================================================
+   CONFIRM DIALOG
+   ============================================================== */
+const confirmModal = document.getElementById('confirmModal');
+const confirmTitle = document.getElementById('confirmTitle');
+const confirmMsg = document.getElementById('confirmMsg');
+const confirmOk = document.getElementById('confirmOk');
+const confirmCancel = document.getElementById('confirmCancel');
+function confirmDialog({ title, message, okText = 'Confirm', onOk }) {
+  confirmTitle.textContent = title;
+  confirmMsg.textContent = message;
+  confirmOk.textContent = okText;
+  confirmModal.classList.add('show');
+  const cleanup = () => {
+    confirmModal.classList.remove('show');
+    confirmOk.removeEventListener('click', okHandler);
+    confirmCancel.removeEventListener('click', cancelHandler);
+    confirmModal.removeEventListener('click', overlayHandler);
+  };
+  const okHandler = () => { cleanup(); onOk && onOk(); };
+  const cancelHandler = () => cleanup();
+  const overlayHandler = e => { if (e.target === confirmModal) cleanup(); };
+  confirmOk.addEventListener('click', okHandler);
+  confirmCancel.addEventListener('click', cancelHandler);
+  confirmModal.addEventListener('click', overlayHandler);
+}
+
+/* ==============================================================
+   UTIL
+   ============================================================== */
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s) { return escapeHtml(s).replace(/\s+/g, '_'); }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+/* ==============================================================
+   INITIAL RENDER
+   ============================================================== */
+renderCandidateLanding();
+go('candidate');
+</script>
+</body>
+</html>
